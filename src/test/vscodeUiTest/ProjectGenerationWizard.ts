@@ -15,8 +15,7 @@
  */
 import * as _ from 'lodash';
 
-import { InputBox, QuickPickItem, Workbench, WebDriver, WebElement, By, until, Key } from 'vscode-extension-tester';
-import { DialogHandler, OpenDialog } from 'vscode-extension-tester-native';
+import { InputBox, Workbench, WebDriver, WebElement, By, Key, IOpenDialog, IQuickPickItem, repeat, until, FileType } from 'theia-extension-tester';
 
 /**
  * This class represents the project generation wizard visible
@@ -38,7 +37,7 @@ export class ProjectGenerationWizard extends InputBox {
    */
   public static async openWizard(driver: WebDriver): Promise<ProjectGenerationWizard> {
     await (new Workbench()).executeCommand('Quarkus: Generate a Quarkus project');
-    return (new ProjectGenerationWizard().wait(30000));
+    return (new ProjectGenerationWizard().wait(60000));
   }
 
   /**
@@ -80,10 +79,11 @@ export class ProjectGenerationWizard extends InputBox {
     }
     await wizard.next();
 
-    const dialog: OpenDialog = await DialogHandler.getOpenDialog();
+    const dialog: IOpenDialog = await new Workbench().getOpenDialog(FileType.FOLDER);
     await dialog.selectPath(options.dest);
     await dialog.confirm();
-    } catch {
+    } catch (e) {
+      console.error(e);
       return false;
     }
 
@@ -93,25 +93,28 @@ export class ProjectGenerationWizard extends InputBox {
   }
 
   public async setText(newText: string) {
-    await super.sendKeys(Key.ARROW_RIGHT);
+    await this.sendKeys(Key.ARROW_RIGHT);
     await super.setText(newText);
+  }
+
+  public async sendKeys(...var_args: (string | number | Promise<string | number>)[]) {
+    await this.getDriver().wait(until.elementIsVisible(this), 10000);
+    await super.sendKeys(...var_args);
   }
 
   /**
    * Goes to the next step in the wizard
    */
   public async next(): Promise<void> {
-    const prev: WizardStepInfo = await WizardStepInfo.create(this);
-    let curr: WizardStepInfo = prev;
-
     await this.confirm();
     this.currStep++;
     if (this.currStep > this.lastStep) {
       return; // we don't expect another step after the last one
     }
-    while (_.isEqual(prev, curr)) {
-      curr = await WizardStepInfo.create(this);
-    }
+    await this.getDriver().wait(async () => {
+      const title = await this.getTitle();
+      return title?.includes(`Quarkus Tools (${this.currStep}/`)
+    }, 15000, 'Could not find next step.');
   }
 
   /**
@@ -122,43 +125,18 @@ export class ProjectGenerationWizard extends InputBox {
     if (this.currStep === 1) {
       return;
     }
-    const prev: WizardStepInfo = await WizardStepInfo.create(this);
-    let curr: WizardStepInfo = prev;
 
-    const backButton: WebElement = await this.getBackButton();
-    await backButton.click();
+    await this.getDriver().wait(() => this.back(), 10000, 'Could not go back.');
     this.currStep--;
 
-    while (_.isEqual(prev, curr)) {
-      curr = await WizardStepInfo.create(this);
-    }
+    await this.getDriver().wait(async () => {
+      const title = await this.getTitle();
+      return title?.includes(`Quarkus Tools (${this.currStep}/`)
+    }, 15000, 'Could not find previous step.');
   }
 
-  /**
-   * Returns the back button `WebElement` if currently visible,
-   * returns `undefined` otherwise
-   */
-  public async getBackButton(): Promise<WebElement | undefined> {
-    const enclosing: WebElement = this.getEnclosingElement();
-
-    // TODO: Currently, the back button's class is hardcoded here.
-    // After https://github.com/redhat-developer/vscode-extension-tester/issues/136 is fixed, remove the hardcoded class
-    const backButtonClass: string = 'codicon-quick-input-back';
-    try {
-      const backButton: WebElement = await enclosing.findElement(By.className(backButtonClass));
-      return backButton;
-    } catch (e) {
-      return undefined;
-    }
-  }
-
-  /**
-   * Returns the title of the input box
-   */
   public async getInputBoxTitle(): Promise<string> {
-    const enclosing: WebElement = this.getEnclosingElement();
-    const title: WebElement = await enclosing.findElement(By.className('quick-input-title'));
-    return await title.getText();
+    return this.getTitle();
   }
 
   /**
@@ -196,7 +174,7 @@ export class ProjectGenerationWizard extends InputBox {
    * Returns `QuickPickItemInfo` of all visible quick picks
    */
   private async getVisibleQuickPickItemInfo(): Promise<QuickPickItemInfo[]> {
-    const quickPicks: QuickPickItem[] = await this.getQuickPicks();
+    const quickPicks: IQuickPickItem[] = await this.getQuickPicks();
     const all: QuickPickItemInfo[] = [];
 
     for (const quickPickItem of quickPicks) {
@@ -218,12 +196,19 @@ export class ProjectGenerationWizard extends InputBox {
    * @param n
    */
   public async getNthQuickPickItemInfo(n: number): Promise<QuickPickItemInfo> {
-    const quickPicks: QuickPickItem[] = await this.getQuickPicks();
+    const quickPicks: IQuickPickItem[] = await repeat(async () => {
+      const quickPicks: IQuickPickItem[] = await this.getQuickPicks();
+      return quickPicks.length > 0 ? quickPicks : undefined;
+    }, {
+      timeout: 10000,
+      message: 'Could not find quick picks'
+    }) as IQuickPickItem[];
+
     if (n < 0 || n >= quickPicks.length) {
       throw `The index n is out of bounds. The number of quickpicks found were ${quickPicks.length}`;
     }
 
-    const quickPickItem: QuickPickItem = quickPicks[n];
+    const quickPickItem: IQuickPickItem = quickPicks[n];
     return this.getQuickPickItemInfo(quickPickItem);
   }
 
@@ -231,14 +216,14 @@ export class ProjectGenerationWizard extends InputBox {
    * Returns `QuickPickItemInfo` for the provided `quickPickItem`
    * @param quickPickItem
    */
-  private async getQuickPickItemInfo(quickPickItem: QuickPickItem): Promise<QuickPickItemInfo> {
+  private async getQuickPickItemInfo(quickPickItem: IQuickPickItem): Promise<QuickPickItemInfo> {
     const result: QuickPickItemInfo = {
       id: await quickPickItem.getAttribute('id'),
       label: await quickPickItem.getText()
     };
 
     try {
-      result.detail = await this.getStringFromChildElementByClassName(quickPickItem, 'quick-input-list-label-meta');
+      result.detail = await this.getStringFromChildElementByClassName(quickPickItem, 'quick-open-entry-meta');
     } catch (e) {
       // there is no vscode.QuickPickItem.detail for this quick pick item
     }
@@ -250,10 +235,14 @@ export class ProjectGenerationWizard extends InputBox {
     }
     return result;
   }
-
   async getStringFromChildElementByClassName(element: WebElement, className: string): Promise<string> {
-    const childElement: WebElement = await element.findElement(By.className(className));
-    return childElement.getText();
+    const childElements = await element.findElements(By.className(className));
+
+    if (childElements.length === 0) {
+      throw new Error(`Quick pick does not have element with class "${className}".`);
+    }
+
+    return childElements[0].getText();
   }
 }
 
@@ -262,19 +251,4 @@ export interface QuickPickItemInfo {
   label: string;
   description?: string;
   detail?: string;
-}
-
-class WizardStepInfo {
-  message: string;
-  placeholder: string;
-  text: string;
-  quickPicks: QuickPickItem[];
-
-  static async create(input: InputBox): Promise<WizardStepInfo> {
-    const info: WizardStepInfo = new WizardStepInfo();
-    info.message = await input.getMessage();
-    info.placeholder = await input.getPlaceHolder();
-    info.text = await input.getText();
-    return info;
-  }
 }

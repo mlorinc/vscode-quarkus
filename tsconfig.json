@@ -8,12 +8,14 @@
 		"moduleResolution": "node",
 		"outDir": "out",
 		"sourceMap": true,
-		"plugins": [{ "name": "typescript-tslint-plugin" }]
+		"plugins": [{ "name": "typescript-tslint-plugin" }],
+    "rootDir": "src"
 	},
 	"exclude": [
 		"node_modules",
 		"server",
 		"test-resources",
-		".vscode-test"
+		".vscode-test",
+    "out"
 	]
 }

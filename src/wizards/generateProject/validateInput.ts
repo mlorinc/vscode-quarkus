@@ -17,7 +17,7 @@
 export async function validateGroupId(userInput: string): Promise<string | undefined> {
   // regex referenced from
   // https://github.com/quarkusio/code.quarkus.io/blob/master/src/main/frontend/src/code-quarkus/pickers/info-picker.tsx
-  const re = new RegExp('^([a-zA-Z_$][a-zA-Z\\d_$]*\\.)*[a-zA-Z_$][a-zA-Z\\d_$]*$');
+  const re = /^([a-zA-Z_$][a-zA-Z\\d_$]*\\.)*[a-zA-Z_$][a-zA-Z\\d_$]*$/;
   if (!re.test(userInput)) {
     if (!/^[a-zA-Z_$]/.test(userInput)) {
       return 'Invalid groupId: A valid groupId must start with a character from A to z, or one of the following symbols: _$';
@@ -32,7 +32,7 @@ export async function validateGroupId(userInput: string): Promise<string | undef
 export async function validateArtifactId(userInput: string): Promise<string | undefined> {
   // regex referenced from
   // https://github.com/quarkusio/code.quarkus.io/blob/master/src/main/frontend/src/code-quarkus/pickers/info-picker.tsx
-  const re = new RegExp('^[a-z][a-z0-9-._]*$');
+  const re = /^[a-z][a-z0-9-._]*$'/;
   if (!re.test(userInput)) {
     if (!/^[a-z]/.test(userInput)) {
       return 'Invalid artifactId: A valid artifactId must start with a character from a-z';
@@ -49,7 +49,7 @@ export async function validateVersion(userInput: string): Promise<string | undef
 export async function validatePackageName(userInput: string): Promise<string | undefined> {
   // regex referenced from
   // https://github.com/quarkusio/code.quarkus.io/blob/master/src/main/frontend/src/code-quarkus/pickers/info-picker.tsx
-  const re = new RegExp('^([a-zA-Z_$][a-zA-Z\\d_$]*\\.)*[a-zA-Z_$][a-zA-Z\\d_$]*$');
+  const re = /^([a-zA-Z_$][a-zA-Z\\d_$]*\\.)*[a-zA-Z_$][a-zA-Z\\d_$]*$/;
   if (!re.test(userInput)) {
     if (!/^[a-zA-Z_$]/.test(userInput)) {
       return 'Invalid package name: A valid package name must start with a character from A to z, or one of the following symbols: _$';
@@ -62,7 +62,7 @@ export async function validatePackageName(userInput: string): Promise<string | u
 }
 
 export async function validateResourceName(userInput: string): Promise<string | undefined> {
-  const re = new RegExp('^[A-Za-z]+[A-Za-z0-9_]*$');
+  const re = /^[A-Za-z]+[A-Za-z0-9_]*$/;
   if (!re.test(userInput)) {
     if (!/^[A-Za-z]/.test(userInput)) {
       return 'Invalid resource name: A valid resource name must start with a character from A to z';

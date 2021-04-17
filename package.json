@@ -248,7 +248,8 @@
     "build-ext": "./node_modules/.bin/gulp buildExtension",
     "test-ui": "npm run test-compile && npm run test-ui-run",
     "test-ui-run": "extest setup-and-run 'out/test/vscodeUiTest/suite/*.js' -u -e 'out/test/vscodeUiTest/extensions'",
-    "test-all": "npm test && npm run test-ui-run"
+    "test-all": "npm test && npm run test-ui-run",
+    "test-che": "node -r dotenv/config out/test/vscodeUiTest/che.runner.js out/test/vscodeUiTest/suite/*.js"
   },
   "resolutions": {
     "minimist": "1.2.5"
@@ -267,12 +268,14 @@
     "@types/yauzl": "^2.9.1",
     "chai": "^4.2.0",
     "chai-fs": "^2.0.0",
+    "dotenv": "^8.2.0",
     "gradle-to-js": "^2.0.0",
     "gulp": "^4.0.2",
     "gulp-rename": "^1.4.0",
     "minimist": ">=1.2.5",
     "mocha": "^8.3.2",
     "pom-parser": "^1.2.0",
+    "theia-extension-tester": "file:../theia-extension-tester/theia-extension-tester-1.0.0.tgz",
     "ts-loader": "^6.0.1",
     "tslint": "^5.20.1",
     "typescript": "^3.7.2",
