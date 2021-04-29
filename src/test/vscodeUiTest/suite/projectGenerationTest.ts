@@ -13,14 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+
 import * as _ from 'lodash';
+import * as g2js from 'gradle-to-js/lib/parser';
 import * as path from 'path';
 import * as pomParser from 'pom-parser';
-import * as g2js from 'gradle-to-js/lib/parser';
-
-import { InputBox, SeleniumBrowser, Workbench, WebDriver, Key, IDefaultTreeSection, repeat, INotificationsCenter, NotificationType, EditorView, INotification, FileType } from 'theia-extension-tester';
-import { ProjectGenerationWizard, QuickPickItemInfo } from '../ProjectGenerationWizard';
+import {
+  FileType,
+  IDefaultTreeSection,
+  INotification,
+  INotificationsCenter,
+  InputBox,
+  Key,
+  NotificationType,
+  repeat,
+  SeleniumBrowser,
+  WebDriver,
+  Workbench
+} from 'theia-extension-tester';
 import { expect, use } from 'chai';
+import { ProjectGenerationWizard, QuickPickItemInfo } from '../ProjectGenerationWizard';
 
 use(require('chai-fs'));
 
@@ -129,7 +142,7 @@ describe('Project generation tests', function () {
    * Tests if the project generation wizard has correct
    * step values at the wizard's title bar: (1/7), (2/7)
    */
-  it.skip('should have correct step values', async function () {
+  it('should have correct step values', async function () {
     const wizard: ProjectGenerationWizard = await ProjectGenerationWizard.openWizard(driver);
     expect(await wizard.getInputBoxTitle()).to.have.string('1/7');
     expect(await wizard.back()).to.not.be.ok;
@@ -185,7 +198,7 @@ describe('Project generation tests', function () {
    * Tests if the project generation wizard correctly creates a new
    * Quarkus Maven project with some extensions added
    */
-  it.skip('should generate Maven project with extensions added', async function () {
+  it('should generate Maven project with extensions added', async function () {
     this.timeout(80000);
 
     const projectDestDir: string = path.join(tempDir, 'maven');
@@ -219,7 +232,7 @@ describe('Project generation tests', function () {
    * Tests if the project generation wizard correctly creates a new
    * Quarkus Gradle project with some extensions added
    */
-  it.skip('should generate Gradle project with extensions added', async function () {
+  it('should generate Gradle project with extensions added', async function () {
     this.timeout(80000);
 
     const projectDestDir: string = path.join(tempDir, 'gradle');
@@ -256,7 +269,7 @@ describe('Project generation tests', function () {
    * Tests if default values throughout the wizard are updated to match
    * the previously generated project's values
    */
-  it.skip('should display input values from previously generated project (with extensions)', async function () {
+  it('should display input values from previously generated project (with extensions)', async function () {
     this.timeout(80000);
 
     const projectDestDir: string = path.join(tempDir, 'previous-values-extensions');
@@ -320,7 +333,7 @@ describe('Project generation tests', function () {
    * Tests if the project generation wizard displays correct
    * validation messages
    */
-  it.skip('should have correct input validation messages', async function () {
+  it('should have correct input validation messages', async function () {
     this.timeout(120000);
     const wizard: ProjectGenerationWizard = await ProjectGenerationWizard.openWizard(driver);
     await wizard.next();
@@ -417,7 +430,7 @@ describe('Project generation tests', function () {
   /**
    * Tests if the extensions picker displays extensions without duplicates.
    */
-  it.skip('should display extensions without duplicates', async function () {
+  it('should display extensions without duplicates', async function () {
     this.timeout(80000);
     const wizard: ProjectGenerationWizard = await ProjectGenerationWizard.openWizard(driver);
     await wizard.next();
@@ -453,14 +466,18 @@ describe('Project generation tests', function () {
     });
 
     beforeEach(async function () {
+      const workbench = new Workbench();
       // clear notifications
-      center = await new Workbench().openNotificationsCenter();
+      center = await workbench.openNotificationsCenter();
+      expect(await center.isDisplayed()).to.be.true;
       // clears and closes notifications
       await center.clearAllNotifications();
-      center = await new Workbench().openNotificationsCenter();
+      expect(await center.isDisplayed()).to.be.false;
+      center = await workbench.openNotificationsCenter();
+      expect(await center.isDisplayed()).to.be.true;
 
       // close all editors
-      await new EditorView().closeAllEditors();
+      await workbench.getEditorView().closeAllEditors();
     });
 
     afterEach(async function () {
@@ -536,6 +553,7 @@ describe('Project generation tests', function () {
       const projectPath = path.join(tempDir, projectFolderName);
       expect(await tree.existsFile(path.join(projectPath, 'build.gradle'))).to.be.true;
       await notification.takeAction(overwrite);
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       expect(await tree.existsFile(path.join(projectPath, 'pom.xml'))).to.be.true;
       expect(await tree.existsFile(path.join(projectPath, 'build.gradle'))).to.be.false;
     });
@@ -569,6 +587,7 @@ describe('Project generation tests', function () {
       await dialog.selectPath(alternativeLocation);
       await dialog.confirm();
 
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       expect(await tree.existsFile(path.join(projectPath, 'build.gradle'))).to.be.true;
       expect(await tree.existsFile(path.join(alternativeLocation, projectFolderName, 'pom.xml'))).to.be.true;
     });
@@ -644,6 +663,11 @@ async function getFileTree(): Promise<IDefaultTreeSection> {
 
 async function getNotification(message: string, center: INotificationsCenter, timeout: number): Promise<INotification> {
   return await repeat(async () => {
+    if (await center.isDisplayed() === false) {
+      center = await new Workbench().openNotificationsCenter();
+      return;
+    }
+
     for (const notification of await center.getNotifications(NotificationType.Any)) {
       if (await notification.getMessage() === message) {
         return notification;

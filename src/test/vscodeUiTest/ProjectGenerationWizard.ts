@@ -13,9 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import * as _ from 'lodash';
 
-import { InputBox, Workbench, WebDriver, WebElement, By, Key, IOpenDialog, IQuickPickItem, repeat, until, FileType } from 'theia-extension-tester';
+import * as _ from 'lodash';
+import { CheBrowser } from 'theia-extension-tester';
+import {
+  By,
+  FileType,
+  InputBox,
+  IOpenDialog,
+  IQuickPickItem,
+  Key,
+  repeat,
+  SeleniumBrowser,
+  until,
+  WebDriver,
+  WebElement,
+  Workbench
+} from 'theia-extension-tester';
 
 /**
  * This class represents the project generation wizard visible
@@ -58,30 +72,30 @@ export class ProjectGenerationWizard extends InputBox {
   }): Promise<boolean> {
     const wizard: ProjectGenerationWizard = await this.openWizard(driver);
     try {
-    if (options.buildTool) await wizard.setText(options.buildTool);
-    await wizard.next();
-    if (options.groupId) await wizard.setText(options.groupId);
-    await wizard.next();
-    if (options.artifactId) await wizard.setText(options.artifactId);
-    await wizard.next();
-    if (options.projectVersion) await wizard.setText(options.projectVersion);
-    await wizard.next();
-    if (options.packageName) await wizard.setText(options.packageName);
-    await wizard.next();
-    if (options.resourceName) await wizard.setText(options.resourceName);
-    await wizard.next();
+      if (options.buildTool) await wizard.setText(options.buildTool);
+      await wizard.next();
+      if (options.groupId) await wizard.setText(options.groupId);
+      await wizard.next();
+      if (options.artifactId) await wizard.setText(options.artifactId);
+      await wizard.next();
+      if (options.projectVersion) await wizard.setText(options.projectVersion);
+      await wizard.next();
+      if (options.packageName) await wizard.setText(options.packageName);
+      await wizard.next();
+      if (options.resourceName) await wizard.setText(options.resourceName);
+      await wizard.next();
 
-    if (options.extensions) {
-      for (const extensionName of options.extensions) {
-        await wizard.setText(extensionName);
-        await wizard.confirm();
+      if (options.extensions) {
+        for (const extensionName of options.extensions) {
+          await wizard.setText(extensionName);
+          await wizard.confirm();
+        }
       }
-    }
-    await wizard.next();
+      await wizard.next();
 
-    const dialog: IOpenDialog = await new Workbench().getOpenDialog(FileType.FOLDER);
-    await dialog.selectPath(options.dest);
-    await dialog.confirm();
+      const dialog: IOpenDialog = await new Workbench().getOpenDialog(FileType.FOLDER);
+      await dialog.selectPath(options.dest);
+      await dialog.confirm();
     } catch (e) {
       console.error(e);
       return false;
@@ -223,7 +237,8 @@ export class ProjectGenerationWizard extends InputBox {
     };
 
     try {
-      result.detail = await this.getStringFromChildElementByClassName(quickPickItem, 'quick-open-entry-meta');
+      const className = SeleniumBrowser.instance.name === CheBrowser.BROWSER_NAME ? 'quick-open-entry-meta' : 'quick-input-list-label-meta'
+      result.detail = await this.getStringFromChildElementByClassName(quickPickItem, className);
     } catch (e) {
       // there is no vscode.QuickPickItem.detail for this quick pick item
     }
