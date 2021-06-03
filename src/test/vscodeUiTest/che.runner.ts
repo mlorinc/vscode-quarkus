@@ -1,4 +1,5 @@
-import { CheBrowser, CheDistribution, OpenShiftAuthenticator, OpenShiftAuthenticatorMethod, WorkspaceTestRunner } from "theia-extension-tester";
+import { createBrowser, BrowserDistribution, OpenShiftAuthenticator, OpenShiftAuthenticatorMethod, CheTheiaFactoryRunner, createWebDriverManager } from "theia-extension-tester";
+import * as path from "path";
 
 async function main() {
     if (process.env.CHE_USERNAME === undefined) {
@@ -11,44 +12,41 @@ async function main() {
         process.exit(1);
     }
 
-    const browser = new CheBrowser({
-        // Test browser
-        browserName: "chrome",
-        distribution: CheDistribution.CODEREADY_WORKSPACES,
-        // Eclipse Che URL
-        location: "https://workspaces.openshift.com/",
-        // Authenticator object logs in user into Eclipse Che
-        authenticator: new OpenShiftAuthenticator({
-            inputData: [
-                {
-                    name: 'username',
-                    value: process.env.CHE_USERNAME
-                },
-                {
-                    name: 'password',
-                    value: process.env.CHE_PASSWORD
-                }
-            ],
-            multiStepForm: true,
-            loginMethod: OpenShiftAuthenticatorMethod.DEVSANDBOX
-        }),
-        // Selenium implicit timeouts
-        timeouts: {
-            implicit: 30000,
-            pageLoad: 150000
-        },
+    const driver = createWebDriverManager('chrome', path.join('test-resources', 'drivers'), '88.0.4324.96');
+    await driver.downloadDriver();
+
+    const browser = createBrowser('chrome', {
+      distribution: BrowserDistribution.CODEREADY_WORKSPACES,
+      driverLocation: await driver.getBinaryPath(),
+      timeouts: {
+        implicit: 40000,
+        pageLoad: 250000
+      }
     });
 
-    const runner = new WorkspaceTestRunner(browser, {
-        // Eclipse Che workspace name - does not need to be exact
-        workspaceName: 'Quarkus',
-        // Use running workspace instead - changes workspace name to 'apache-camel-k'
-        useExistingWorkspace: true,
-        // Mocha test options
-        mochaOptions: {
-            bail: true
-        }
+    const authenticator = new OpenShiftAuthenticator({
+        inputData: [
+          {
+              name: 'username',
+              value: process.env.CHE_USERNAME
+          },
+          {
+              name: 'password',
+              value: process.env.CHE_PASSWORD
+          }
+      ],
+      multiStepForm: true,
+      loginMethod: OpenShiftAuthenticatorMethod.DEVSANDBOX
     });
+
+    ////https://workspaces.openshift.com/f?url=https://codeready-codeready-workspaces-operator.apps.sandbox.x8i5.p1.openshiftapps.com/devfile-registry/devfiles/03_java11-maven-quarkus/devfile.yaml&override.attributes.persistVolumes=false
+    const runner = new CheTheiaFactoryRunner(browser, {
+      cheUrl: 'https://workspaces.openshift.com/',
+      factoryUrl: 'https://codeready-codeready-workspaces-operator.apps.sandbox.x8i5.p1.openshiftapps.com/devfile-registry/devfiles/03_java11-maven-quarkus/devfile.yaml',
+      mochaOptions: {
+        bail: true
+      }
+    }, authenticator);
 
     // Remove first element - program path
     const [, ...args] = process.argv;
