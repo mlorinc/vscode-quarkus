@@ -13,7 +13,7 @@ async function main() {
 
     const tester = new ExTester(undefined, undefined, extensionDir);
     await tester.downloadCode('1.55.2');
-    await tester.downloadChromeDriver();
+    await tester.downloadChromeDriver('1.55.2');
     await tester.installVsix();
     await tester.runTests(tests, {
         cleanup: false,
