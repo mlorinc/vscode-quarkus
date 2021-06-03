@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import "../bootstrap";
 
 import * as _ from 'lodash';
 import * as g2js from 'gradle-to-js/lib/parser';
@@ -31,7 +32,7 @@ import {
   SeleniumBrowser,
   WebDriver,
   Workbench
-} from 'theia-extension-tester';
+} from 'vscode-extension-tester';
 import { expect, use } from 'chai';
 import { ProjectGenerationWizard, QuickPickItemInfo } from '../ProjectGenerationWizard';
 
@@ -43,7 +44,7 @@ use(require('chai-fs'));
  */
 describe('Project generation tests', function () {
   this.bail(true);
-  this.timeout(60000);
+  this.timeout(90000);
 
   let driver: WebDriver;
   let tempDir: string;
@@ -68,14 +69,21 @@ describe('Project generation tests', function () {
   });
 
   after(async () => {
-    await tree?.deleteFolder(tempDir);
+    if (await tree.existsFolder(tempDir, 0)) {
+      await tree.deleteFolder(tempDir);
+    }
   });
 
   afterEach(async () => {
-    const input = new InputBox();
+    try {
+      const input = new InputBox();
 
-    if (await input.isDisplayed()) {
-      await input.cancel();
+      if (await input.isDisplayed()) {
+        await input.cancel();
+      }
+    }
+    catch (e) {
+      console.warn(`[WARNING] ${e.message}`);
     }
   });
 
@@ -85,9 +93,17 @@ describe('Project generation tests', function () {
    * in the command palette
    */
   it('should open project generation wizard', async function () {
+    // Java extension is blocking the test case on Eclipse Che. Multiple attempts
+    // are required.
+    this.retries(4);
+
     const wizard: ProjectGenerationWizard = await ProjectGenerationWizard.openWizard(driver);
-    expect(await wizardExists(), 'wizard did not open').to.be.true;
-    await wizard.cancel();
+    try {
+      expect(await wizardExists(), 'wizard did not open').to.be.true;
+    }
+    finally {
+      await wizard.cancel();
+    }
   });
 
   /**
@@ -448,6 +464,8 @@ describe('Project generation tests', function () {
   });
 
   describe('Notification tests', function () {
+    this.timeout(180000);
+
     let center: INotificationsCenter | undefined;
     const notificationMessage = 'New project has been generated.';
     const newWindow = 'Open in new window';
@@ -630,10 +648,8 @@ interface ExpectedValidation {
 async function assertValidation(type: string, input: InputBox, expectedResults: ExpectedValidation[]) {
   for (let i = 0; i < expectedResults.length; i++) {
     const expectedResult: ExpectedValidation = expectedResults[i];
-    console.log(`Setting: "${expectedResult.text}"`);
 
     await input.setText(expectedResult.text);
-    console.log(`Set: "${expectedResult.text}"`);
     if (expectedResult.errorMessage) {
       expect(await input.getDriver().wait(() => input.hasError(), 3000).catch(() => false), `Validation for ${type} at index ${i}, with text ${expectedResult.text} should be true`).to.be.true;
 
@@ -648,7 +664,6 @@ async function assertValidation(type: string, input: InputBox, expectedResults: 
         async () => await input.hasError() === false, 3000).then(() => false).catch(() => true),
         `Validation for ${type} at index ${i}, with text ${expectedResult.text} should be false`).to.be.false;
     }
-    console.log(`Passed: "${expectedResult.text}"`);
   }
 }
 

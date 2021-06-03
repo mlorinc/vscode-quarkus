@@ -15,7 +15,7 @@
  */
 
 import * as _ from 'lodash';
-import { CheBrowser } from 'theia-extension-tester';
+import { BaseBrowser } from 'theia-extension-tester';
 import {
   By,
   FileType,
@@ -29,7 +29,7 @@ import {
   WebDriver,
   WebElement,
   Workbench
-} from 'theia-extension-tester';
+} from 'vscode-extension-tester';
 
 /**
  * This class represents the project generation wizard visible
@@ -232,12 +232,12 @@ export class ProjectGenerationWizard extends InputBox {
    */
   private async getQuickPickItemInfo(quickPickItem: IQuickPickItem): Promise<QuickPickItemInfo> {
     const result: QuickPickItemInfo = {
-      id: await quickPickItem.getAttribute('id'),
+      id: (await quickPickItem.getIndex()).toString(),
       label: await quickPickItem.getText()
     };
 
     try {
-      const className = SeleniumBrowser.instance.name === CheBrowser.BROWSER_NAME ? 'quick-open-entry-meta' : 'quick-input-list-label-meta'
+      const className = SeleniumBrowser.instance.name === BaseBrowser.BROWSER_NAME ? 'quick-open-entry-meta' : 'quick-input-list-label-meta'
       result.detail = await this.getStringFromChildElementByClassName(quickPickItem, className);
     } catch (e) {
       // there is no vscode.QuickPickItem.detail for this quick pick item
