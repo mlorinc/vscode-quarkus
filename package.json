@@ -236,7 +236,6 @@
   },
   "scripts": {
     "preinstall": "npx npm-force-resolutions",
-    "vscode:prepublish": "webpack --mode production",
     "compile": "webpack --mode none",
     "watch": "webpack --mode development --watch --info-verbosity verbose",
     "test-compile": "tsc -p ./",
@@ -249,8 +248,11 @@
     "test-ui": "npm run test-compile && npm run test-ui-run",
     "test-ui-run": "extest setup-and-run 'out/test/vscodeUiTest/suite/*.js' -u -e 'out/test/vscodeUiTest/extensions'",
     "test-all": "npm test && npm run test-ui-run",
-    "test-che": "node -r dotenv/config out/test/vscodeUiTest/che.runner.js out/test/vscodeUiTest/suite/*.js",
-    "test-vscode": "node out/test/vscodeUiTest/vscode.runner.js"
+    "test-che": "TESTER_LIB=theia-extension-tester node -r dotenv/config out/test/vscodeUiTest/che.runner.js out/test/vscodeUiTest/suite/*.js",
+    "test-vscode": "TESTER_LIB=vscode-extension-tester node out/test/vscodeUiTest/vscode.runner.js",
+    "test-theia": "TESTER_LIB=theia-extension-tester node out/test/vscodeUiTest/theia.runner.js out/test/vscodeUiTest/suite/*.js",
+    "theia:refresh": "npm rm theia-extension-tester && npm install ../theia-extension-tester/theia-extension-tester-1.0.0.tgz --save-dev",
+    "vscode:refresh": "npm rm vscode-extension-tester && npm install ../vscode-extension-tester/vscode-extension-tester-4.0.2.tgz --save-dev"
   },
   "resolutions": {
     "minimist": "1.2.5"
@@ -278,6 +280,7 @@
     "pom-parser": "^1.2.0",
     "theia-extension-tester": "file:../theia-extension-tester/theia-extension-tester-1.0.0.tgz",
     "ts-loader": "^6.0.1",
+    "tsconfig-paths": "^3.9.0",
     "tslint": "^5.20.1",
     "typescript": "^3.7.2",
     "typescript-tslint-plugin": "^0.3.1",
